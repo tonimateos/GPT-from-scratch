@@ -16,13 +16,15 @@ Suggestion to use python 3.12:
 - [ ] Deps: `pip install torch numpy matplotlib`.
 - [ ] Settle requirements: `pip freeze > requirements.txt`.
 - [ ] If you need: `deactivate` to exit the virtual environment.
+- [ ] If you had a `requirements.txt`before, just `pip install -r requirements.txt`.
 
-- [ ] Create a `train.py` or a Jupyter Notebook to start your work.
+
 
 ### 2. Data Acquisition & Exploration
-- [ ] Download the `input.txt` (Tiny Shakespeare) dataset.
+- [ ] Download the `input.txt` (Tiny Shakespeare) dataset: `curl -O https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt`
 - [ ] Read the file and inspect its contents (total characters, unique characters/alphabet).
 - [ ] **Challenge:** Print the first 200 characters and the size of your "vocabulary".
+
 
 ### 3. Character-Level Tokenization
 - [ ] Create a mapping from characters to integers (`char_to_int`) and vice versa (`int_to_char`).
