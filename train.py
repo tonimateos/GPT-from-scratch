@@ -1,12 +1,9 @@
 
 class Tokenizer:
     def __init__(self, text):
-        self.chars = self.get_chars(text)
+        self.chars = sorted(set(text))
         self.int_to_char = {i: c for i, c in enumerate(self.chars)}
         self.char_to_int = {c: i for i, c in enumerate(self.chars)}
-
-    def get_chars(self, text):
-        return sorted(set(text))
 
     def encode(self, text):
         return [self.char_to_int[c] for c in text]
