@@ -24,6 +24,9 @@ Suggestion to use python 3.12:
 - [ ] Download the `input.txt` (Tiny Shakespeare) dataset: `curl -O https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt`
 - [ ] Read the file and inspect its contents (total characters, unique characters/alphabet).
 - [ ] **Challenge:** Print the first 200 characters and the size of your "vocabulary".
+  - Create explore.py => check it out
+
+
 
 
 ### 3. Character-Level Tokenization
@@ -36,6 +39,9 @@ Suggestion to use python 3.12:
 - [ ] Implement a `get_batch(split)` function that returns a random batch of inputs `x` and targets `y`.
     - `x` should be a sequence of length `block_size`.
     - `y` should be the same sequence shifted by one (the "next token").
+
+- [ ] Create a `train.py` or a Jupyter Notebook to start your work.
+
 
 ### 5. The Baseline: Bigram Model
 - [ ] Start simple! Create a `BigramLanguageModel` class that just uses an embedding table to predict the next token based *only* on the current token.
