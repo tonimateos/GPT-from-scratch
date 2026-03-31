@@ -34,3 +34,10 @@ def test_bigram():
     table = bigram.token_embedding_table(a)
     assert a.shape == (2, 5)
     assert table.shape == (2, 5, 3)
+    
+def test_generate():
+    tokenizer = Tokenizer('0123456789')
+    bigram = BigramModel(tokenizer.vocab_size)
+    idx = torch.zeros((1, 1), dtype=torch.long)
+    generated_idx = bigram.generate(idx, max_new_tokens=5)
+    assert generated_idx.shape == (1, 6) # e.g. tensor([[0, 1, 5, 2, 0, 9]])
