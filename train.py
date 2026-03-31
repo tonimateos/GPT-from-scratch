@@ -1,6 +1,16 @@
 
 import torch
 
+# Hyperparameters
+batch_size = 32 # how many independent sequences will we process in parallel?
+block_size = 8 # what is the maximum context length for predictions?
+max_iters = 100
+eval_interval = 300
+learning_rate = 1e-3
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+eval_iters = 200
+n_embd = 32
+
 class Tokenizer:
     def __init__(self, text):
         self.text = text
@@ -63,6 +73,29 @@ class BigramModel(torch.nn.Module):
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
     
+class Head(nn.Module):
+    def __init__(self, n_embd, head_size):
+        super().__init__()
+        self.head_size = head_size
+        self.key = torch.nn.Linear(n_embd, head_size, bias=False)
+        self.query = torch.nn.Linear(n_embd, head_size, bias=False)
+        self.value = torch.nn.Linear(n_embd, head_size, bias=False)
+        self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        
+        
+    # Head normally receives the embeddings, not the raw integers
+    def forward(self, x):
+        B, T, C = x.shape
+        q = self.query(x) # (B, T, head_size)
+        k = self.key(x)   # (B, T, head_size)
+        v = self.value(x) # (B, T, head_size)
+        # k.transpose(-2, -1) is (B, head_size, T)
+        wei = q @ k.transpose(-2, -1) # a (B, T, T) matrix showing how much tokens "relate" to each other.
+        wei = wei * (self.head_size**-0.5) # normalize the scores (div by sqrt(size)) to get 'probs'
+        wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
+        wei = torch.nn.functional.softmax(wei, dim=-1)
+        out = wei @ v
+        return out
 
 # Return "hell", "ello"
 def get_batch(data, block_size):
