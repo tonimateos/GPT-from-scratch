@@ -1,4 +1,6 @@
 
+import torch
+
 class Tokenizer:
     def __init__(self, text):
         self.chars = sorted(set(text))
@@ -24,4 +26,9 @@ def read_training_set():
 if __name__ == "__main__":
     text = read_training_set()
     tokenizer = Tokenizer(text)
-    tokenizer.printme()
+    text_tensor = torch.tensor(tokenizer.encode(text), dtype=torch.long)
+    print(f"Shape of tensor: {text_tensor.shape}")
+    print(f"First 10 chars: {text[:10]}")
+    print(f"First 10 encoded chars: {text_tensor[:10]}")
+    print(f"First 10 decoded chars: {tokenizer.decode(text_tensor[:10].tolist())}")
+    
