@@ -48,6 +48,7 @@ def test_head():
     head_size = 16
     x = torch.randn(B, T, C)
     head = Head(C, head_size)
+    head.eval()
     out = head(x)
     
     assert out.shape == (B, T, head_size)
@@ -68,6 +69,7 @@ def test_multi_head():
     head_size = 8 # 4 * 8 = 32 (C)
     x = torch.randn(B, T, C)
     mha = MultiHead(num_heads, head_size)
+    mha.eval()
     out = mha(x)
     
     assert out.shape == (B, T, C)
@@ -105,6 +107,7 @@ def test_block():
     
     # Initialize the block
     block = Block(C, num_heads)
+    block.eval()
     out = block(x)
     
     # 1. Check output shape
