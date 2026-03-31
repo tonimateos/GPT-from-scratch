@@ -48,6 +48,8 @@ Suggestion to use python 3.12:
 - [ ] Implement the `forward` pass and calculate `cross_entropy` loss.
 - [ ] Implement a `generate` function to see what "unintelligent" text looks like.
 
+
+
 ### 6. Building the Transformer Blocks
 Now for the real deal. Implement these components in order:
 - [ ] **Self-Attention:** A single head of attention (Query, Key, Value). Remember the "mask" to prevent looking into the future!

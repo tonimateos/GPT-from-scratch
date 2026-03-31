@@ -28,3 +28,9 @@ def test_batching():
     assert batch_x[1] == batch_y[0]
     assert batch_x[2] == batch_y[1]
     
+def test_bigram():
+    bigram = BigramModel(3)
+    a = torch.tensor([[1,1,2,2,2],[1,1,2,2,2]])
+    table = bigram.token_embedding_table(a)
+    assert a.shape == (2, 5)
+    assert table.shape == (2, 5, 3)
