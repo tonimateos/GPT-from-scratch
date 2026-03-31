@@ -46,7 +46,11 @@ Suggestion to use python 3.12:
 ### 5. The Baseline: Bigram Model
 - [ ] Start simple! Create a `BigramLanguageModel` class that just uses an embedding table to predict the next token based *only* on the current token.
 - [ ] Implement the `forward` pass and calculate `cross_entropy` loss.
-- [ ] Implement a `generate` function to see what "unintelligent" text looks like.
+- [ ] Implement a `generate(idx, max_new_tokens)` function:
+    - **Input:** `idx` is a `(B, T)` tensor of integers (the current context).
+    - **Input:** `max_new_tokens` is the number of characters to add.
+    - **Logic:** In a loop, get the `logits` for the current `idx`, focus only on the last time step, apply `softmax` to get probabilities, and use `torch.multinomial` to sample the next character.
+    - **Output:** The function should return the `idx` tensor extended with the new characters, shape `(B, T + max_new_tokens)`.
 
 
 

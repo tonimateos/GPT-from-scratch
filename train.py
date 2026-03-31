@@ -7,6 +7,7 @@ class Tokenizer:
         chars = sorted(set(text))
         self.int_to_char = {i: c for i, c in enumerate(chars)}
         self.char_to_int = {c: i for i, c in enumerate(chars)}
+        self.vocab_size = len(chars)
 
     def encode(self, text):
         return [self.char_to_int[c] for c in text]
@@ -49,6 +50,19 @@ class BigramModel(torch.nn.Module):
             loss = torch.nn.functional.cross_entropy(logits, targets)
         return logits, loss
         
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            # get the predictions
+            logits, loss = self(idx)
+            # focus only on the last time step
+            logits = logits[:, -1, :]
+            # apply softmax to get probabilities
+            probs = torch.nn.functional.softmax(logits, dim=-1)
+            # sample the next character (it returns a select index, not a value)
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1)
+        return idx
+    
 
 # Return "hell", "ello"
 def get_batch(data, block_size):
@@ -65,9 +79,6 @@ if __name__ == "__main__":
     text = read_training_set()
     tokenizer = Tokenizer(text)
     # train_data, validation_data = tokenizer.get_validation_training_tensors()
-    bigram = BigramModel(3)
-    print(bigram.token_embedding_table.weight)
-    a = torch.tensor([[1,1,2,2,2],[1,1,2,2,2]])
-    table = bigram.token_embedding_table(a)
-    print(table)
-    print(f"Shape of a: {a.shape}, shape of table: {table.shape}")
+    bigram = BigramModel(tokenizer.vocab_size)
+    idx = torch.zeros((1, 1), dtype=torch.long)
+    print(tokenizer.decode(bigram.generate(idx, max_new_tokens=100)[0].tolist()))
