@@ -116,7 +116,7 @@ class Head(nn.Module):
 
 
 class MultiHead(nn.Module):
-    def __init__(self, num_heads, head_size):
+    def __init__(self, n_embd, num_heads, head_size):
         super().__init__()
         self.heads = nn.ModuleList([Head(n_embd, head_size) for _ in range(num_heads)])
         # the following layer mixes the multiple heads into one embedding
@@ -149,7 +149,7 @@ class Block(nn.Module):
         super().__init__()
         assert n_embd % num_heads == 0, "n_embd must be divisible by num_heads"
         head_size = n_embd // num_heads
-        self.self_att = MultiHead(num_heads, head_size)
+        self.self_att = MultiHead(n_embd, num_heads, head_size)
         self.ffwd = FFWD(n_embd)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)

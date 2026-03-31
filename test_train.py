@@ -68,7 +68,7 @@ def test_multi_head():
     num_heads = 4
     head_size = 8 # 4 * 8 = 32 (C)
     x = torch.randn(B, T, C)
-    mha = MultiHead(num_heads, head_size)
+    mha = MultiHead(C, num_heads, head_size)
     mha.eval()
     out = mha(x)
     
