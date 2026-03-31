@@ -79,21 +79,45 @@ def test_multi_head():
     assert torch.allclose(out[:, :-1, :], out2[:, :-1, :])
     assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
 
-def test_ffn():
+def test_ffwd():
     B, T, C = 4, 8, 32
     x = torch.randn(B, T, C)
-    ffn = FFN(C)
-    out = ffn(x)
+    ffwd = FFWD(C)
+    out = ffwd(x)
     
     assert out.shape == (B, T, C)
     
     # Verify token-wise independence (no communication across time)
     x2 = x.clone()
     x2[:, 0, :] = torch.randn(B, C) # Change only the FIRST token
-    out2 = ffn(x2)
+    out2 = ffwd(x2)
     
     # Everything except the first time step MUST be identical
     assert torch.allclose(out[:, 1:, :], out2[:, 1:, :])
     assert not torch.allclose(out[:, 0, :], out2[:, 0, :])
+
+def test_block():
+    # Setup dimensions
+    B, T, C = 2, 8, 32
+    num_heads = 4
+    x = torch.randn(B, T, C)
+    
+    # Initialize the block
+    block = Block(C, num_heads)
+    out = block(x)
+    
+    # 1. Check output shape
+    assert out.shape == (B, T, C)
+    
+    # 2. Verify Causal Property (inherited from Attention)
+    x2 = x.clone()
+    x2[:, -1, :] = torch.randn(B, C) # Change only the last token
+    out2 = block(x2)
+    
+    # Tokens 0 to T-2 should remain exactly the same
+    assert torch.allclose(out[:, :-1, :], out2[:, :-1, :])
+    # The last token should be changed
+    assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
+    
     
     

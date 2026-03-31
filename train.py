@@ -126,7 +126,7 @@ class MultiHead(nn.Module):
         return out
 
 # Expand to 4*n_embd and contact againt
-class FFN(nn.Module):
+class FFWD(nn.Module):
     def __init__(self, n_embd):
         super().__init__()
         self.net = nn.Sequential(
@@ -138,7 +138,26 @@ class FFN(nn.Module):
     def forward(self, x):
         return self.net(x)
         
-
+class Block(nn.Module):
+    def __init__(self, n_embd, num_heads):
+        super().__init__()
+        head_size = n_embd // num_heads
+        self.self_att = MultiHead(num_heads, head_size)
+        self.ffwd = FFWD(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
+        
+    def forward(self, x):
+        # 1. Attention + Residual Connection
+        # first term is residual connection, second is attention
+        # ln1: does not change dimension, just normalizes
+        # x is a tensor of shape (B, T, C)
+        # self_att.forwards returns (B, T, n_embd), so all good
+        x = x + self.self_att(self.ln1(x))
+        
+        # 2. Feed-Forward + Residual Connection
+        x = x + self.ffwd(self.ln2(x))
+        return x
 
 
 # Return "hell", "ello"
