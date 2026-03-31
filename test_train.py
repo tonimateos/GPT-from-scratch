@@ -83,6 +83,7 @@ def test_ffwd():
     B, T, C = 4, 8, 32
     x = torch.randn(B, T, C)
     ffwd = FFWD(C)
+    ffwd.eval()
     out = ffwd(x)
     
     assert out.shape == (B, T, C)

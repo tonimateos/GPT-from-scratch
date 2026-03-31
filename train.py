@@ -3,15 +3,17 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-# Hyperparameters
-batch_size = 32 # how many independent sequences will we process in parallel?
-block_size = 8 # what is the maximum context length for predictions?
-max_iters = 100
+# Hyperparameters (note n_embd = num_heads * head_size (which will be 32 too))
+batch_size = 32
+n_embd = 128
+num_heads = 4
+block_size = 64
+max_iters = 5000
 eval_interval = 300
-learning_rate = 1e-3
+learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
-n_embd = 32
+dropout = 0.2
 # Usually, we want the total size of all heads combined to equal our total embedding size (n_embd).
 # If n_embd = 32, a common choice is num_heads = 4 and head_size = 8.
 # 4 heads x 8 features = 32 total features.
@@ -92,7 +94,7 @@ class Head(nn.Module):
         self.query = nn.Linear(n_embd, head_size, bias=False)
         self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
-        
+        self.dropout = nn.Dropout(dropout)
         
     # Head normally receives the embeddings, not the raw integers
     # x is a tensor of shape (B, T, C)
@@ -108,6 +110,7 @@ class Head(nn.Module):
         wei = wei * (self.head_size**-0.5) # normalize the scores (div by sqrt(size)) to get 'probs'
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
         out = wei @ v
         return out
 
@@ -118,11 +121,13 @@ class MultiHead(nn.Module):
         self.heads = nn.ModuleList([Head(n_embd, head_size) for _ in range(num_heads)])
         # the following layer mixes the multiple heads into one embedding
         self.proj = nn.Linear(num_heads * head_size, n_embd)
+        self.dropout = nn.Dropout(dropout)
         
     def forward(self, x):
         out = [h(x) for h in self.heads] # list of n_heads entires of (B, T, head_size) dim each
         out = torch.cat(out, dim=-1) # (B, T, n_heads * head_size)
         out = self.proj(out) # (B, T, n_embd)
+        out = self.dropout(out)
         return out
 
 # Expand to 4*n_embd and contact againt
@@ -132,7 +137,8 @@ class FFWD(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
             nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd)
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
         )
     
     def forward(self, x):
@@ -141,6 +147,7 @@ class FFWD(nn.Module):
 class Block(nn.Module):
     def __init__(self, n_embd, num_heads):
         super().__init__()
+        assert n_embd % num_heads == 0, "n_embd must be divisible by num_heads"
         head_size = n_embd // num_heads
         self.self_att = MultiHead(num_heads, head_size)
         self.ffwd = FFWD(n_embd)
