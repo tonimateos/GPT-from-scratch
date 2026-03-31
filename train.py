@@ -25,6 +25,13 @@ class Tokenizer:
         validation_data = tensor_text[split_index:]
         return train_data, validation_data
 
+
+# Return "hell", "ello"
+def get_batch(data, block_size):
+    first_index = torch.randint(0, len(data)-block_size, (1,))
+    return data[first_index:first_index+block_size], data[first_index+1:first_index+block_size+1]
+    
+
 def read_training_set():
     with open("input.txt", 'r') as f:
         text = f.read()

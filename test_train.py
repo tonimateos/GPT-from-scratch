@@ -1,4 +1,4 @@
-from train import Tokenizer
+from train import *
 
 def test_int_and_char():
     tokenizer = Tokenizer('abc')
@@ -18,3 +18,13 @@ def test_split():
     assert len(validation_data) == 1
     assert train_data.tolist() == [0, 1, 2, 3, 4, 5, 6, 7, 8]
     assert validation_data.tolist() == [9]
+    
+def test_batching():
+    tokenizer = Tokenizer('0123456789')
+    train_data, validation_data = tokenizer.get_validation_training_tensors()
+    batch_x, batch_y = get_batch(train_data, 3)
+    assert batch_x.shape == (3,)
+    assert batch_y.shape == (3,)
+    assert batch_x[1] == batch_y[0]
+    assert batch_x[2] == batch_y[1]
+    

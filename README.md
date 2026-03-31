@@ -30,6 +30,7 @@ Suggestion to use python 3.12:
 
 
 ### 3. Character-Level Tokenization
+- [ ] Create a `train.py` or a Jupyter Notebook to start your work.
 - [ ] Create a mapping from characters to integers (`char_to_int`) and vice versa (`int_to_char`).
 - [ ] Write an `encode` function (string -> list of ints) and a `decode` function (list of ints -> string).
 - [ ] Convert the entire dataset into a `torch.Tensor` of type `long`.
@@ -40,7 +41,6 @@ Suggestion to use python 3.12:
     - `x` should be a sequence of length `block_size`.
     - `y` should be the same sequence shifted by one (the "next token").
 
-- [ ] Create a `train.py` or a Jupyter Notebook to start your work.
 
 
 ### 5. The Baseline: Bigram Model
