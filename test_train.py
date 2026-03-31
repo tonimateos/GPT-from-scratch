@@ -11,3 +11,10 @@ def test_endode_decode():
     decoded_text = tokenizer.decode(encoded_text)
     assert decoded_text == "hello"
     
+def test_split():
+    tokenizer = Tokenizer('0123456789')
+    train_data, validation_data = tokenizer.get_validation_training_tensors()
+    assert len(train_data) == 9
+    assert len(validation_data) == 1
+    assert train_data.tolist() == [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    assert validation_data.tolist() == [9]
