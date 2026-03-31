@@ -56,15 +56,20 @@ Suggestion to use python 3.12:
 
 ### 6. Building the Transformer Blocks
 Now for the real deal. Implement these components in order:
-- [ ] **Self-Attention:** A single head of attention (Query, Key, Value). Remember the "mask" to prevent looking into the future!
-- [ ] **Multi-Head Attention:** Multiple Single-Head Attentions running in parallel and concatenated.
+- [x] **Self-Attention:** A single head of attention (Query, Key, Value). Remember the "mask" to prevent looking into the future!
+- [x] **Multi-Head Attention:** Multiple Single-Head Attentions running in parallel and concatenated.
 - [ ] **Feed-Forward Network (FFN):** A simple linear-ReLU-linear layer.
-- [ ] **Transformer Block:** Combine Multi-Head Attention, FFN, and **LayerNorm**. Don't forget the **Residual Connections**!
+    - **Architecture:** `nn.Sequential` with `nn.Linear(n_embd, 4 * n_embd)`, `nn.ReLU()`, and `nn.Linear(4 * n_embd, n_embd)`.
+- [ ] **Transformer Block:** Combine Multi-Head Attention, FFN, and **LayerNorm**.
+    - **Logic:** Add **Residual Connections**: `x = x + self.sa(self.ln1(x))` followed by `x = x + self.ffwd(self.ln2(x))`.
+    - **Tip:** Layer normalization (`nn.LayerNorm(n_embd)`) should be applied *before* the attention and feed-forward parts.
 
 ### 7. The Full Model
-- [ ] Implement **Positional Encodings** so the model knows where tokens are in the sequence.
-- [ ] Assemble the full `GPT` model with multiple Transformer Blocks.
-- [ ] Calculate the final loss against targets.
+- [ ] **Positional Encodings:** So the model knows where tokens are in the sequence.
+    - **Implementation:** Use an `nn.Embedding(block_size, n_embd)` table that maps each position index (0 to T-1) to a vector.
+- [ ] **Assemble the final Model:** Create a new class (e.g. `GPTLanguageModel`).
+    - **Architecture:** Token Embedding + Positional Embedding -> Transformer Blocks -> LayerNorm -> final Linear layer to get vocabulary scores.
+- [ ] Calculate the final loss against targets in the `forward` pass.
 
 ### 8. The Training Loop
 - [ ] Choose an optimizer (AdamW is recommended).

@@ -78,4 +78,22 @@ def test_multi_head():
     out2 = mha(x2)
     assert torch.allclose(out[:, :-1, :], out2[:, :-1, :])
     assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
+
+def test_ffn():
+    B, T, C = 4, 8, 32
+    x = torch.randn(B, T, C)
+    ffn = FFN(C)
+    out = ffn(x)
+    
+    assert out.shape == (B, T, C)
+    
+    # Verify token-wise independence (no communication across time)
+    x2 = x.clone()
+    x2[:, 0, :] = torch.randn(B, C) # Change only the FIRST token
+    out2 = ffn(x2)
+    
+    # Everything except the first time step MUST be identical
+    assert torch.allclose(out[:, 1:, :], out2[:, 1:, :])
+    assert not torch.allclose(out[:, 0, :], out2[:, 0, :])
+    
     
