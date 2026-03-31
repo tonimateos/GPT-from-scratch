@@ -1,5 +1,7 @@
 
 import torch
+import torch.nn as nn
+from torch.nn import functional as F
 
 # Hyperparameters
 batch_size = 32 # how many independent sequences will we process in parallel?
@@ -37,10 +39,10 @@ class Tokenizer:
         return train_data, validation_data
 
 
-class BigramModel(torch.nn.Module):
+class BigramModel(nn.Module):
     def __init__(self, vocab_size):
         super().__init__()
-        self.token_embedding_table = torch.nn.Embedding(vocab_size, vocab_size)
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
         # self.token_embedding_table.weight is randomly initialized
         # size is vocab_size x vocab_size
         # the rows are the prob of each token given this provided token (=row number)
@@ -57,7 +59,7 @@ class BigramModel(torch.nn.Module):
             B, T, C = logits.shape
             logits = logits.view(B*T, C)
             targets = targets.view(B*T)
-            loss = torch.nn.functional.cross_entropy(logits, targets)
+            loss = F.cross_entropy(logits, targets)
         return logits, loss
         
     def generate(self, idx, max_new_tokens):
@@ -67,7 +69,7 @@ class BigramModel(torch.nn.Module):
             # focus only on the last time step
             logits = logits[:, -1, :]
             # apply softmax to get probabilities
-            probs = torch.nn.functional.softmax(logits, dim=-1)
+            probs = F.softmax(logits, dim=-1)
             # sample the next character (it returns a select index, not a value)
             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
             idx = torch.cat((idx, idx_next), dim=1)
@@ -77,9 +79,9 @@ class Head(nn.Module):
     def __init__(self, n_embd, head_size):
         super().__init__()
         self.head_size = head_size
-        self.key = torch.nn.Linear(n_embd, head_size, bias=False)
-        self.query = torch.nn.Linear(n_embd, head_size, bias=False)
-        self.value = torch.nn.Linear(n_embd, head_size, bias=False)
+        self.key = nn.Linear(n_embd, head_size, bias=False)
+        self.query = nn.Linear(n_embd, head_size, bias=False)
+        self.value = nn.Linear(n_embd, head_size, bias=False)
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
         
         
@@ -93,7 +95,7 @@ class Head(nn.Module):
         wei = q @ k.transpose(-2, -1) # a (B, T, T) matrix showing how much tokens "relate" to each other.
         wei = wei * (self.head_size**-0.5) # normalize the scores (div by sqrt(size)) to get 'probs'
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        wei = torch.nn.functional.softmax(wei, dim=-1)
+        wei = F.softmax(wei, dim=-1)
         out = wei @ v
         return out
 
