@@ -61,5 +61,21 @@ def test_head():
     assert torch.allclose(out[:, :-1, :], out2[:, :-1, :])
     # The last time step should be different
     assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
+
+def test_multi_head():
+    B, T, C = 4, 8, 32
+    num_heads = 4
+    head_size = 8 # 4 * 8 = 32 (C)
+    x = torch.randn(B, T, C)
+    mha = MultiHead(num_heads, head_size)
+    out = mha(x)
     
+    assert out.shape == (B, T, C)
+    
+    # Verify causal property also holds for MultiHead
+    x2 = x.clone()
+    x2[:, -1, :] = torch.randn(B, C)
+    out2 = mha(x2)
+    assert torch.allclose(out[:, :-1, :], out2[:, :-1, :])
+    assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
     

@@ -12,6 +12,14 @@ learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 n_embd = 32
+# Usually, we want the total size of all heads combined to equal our total embedding size (n_embd).
+# If n_embd = 32, a common choice is num_heads = 4 and head_size = 8.
+# 4 heads x 8 features = 32 total features.
+
+# 1. In the Bigram Model (What you built first):
+#       Yes, C was exactly the vocab_size. Because the model was so simple, we just mapped each character directly to a score for every other character in the vocabulary.
+# 2. In a Transformer (What you are building now):
+#       No, C is no longer the vocab_size. It is now a hyperparameter called n_embd (which we set to 32 at the top of your file)
 
 class Tokenizer:
     def __init__(self, text):
@@ -74,7 +82,8 @@ class BigramModel(nn.Module):
             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
             idx = torch.cat((idx, idx_next), dim=1)
         return idx
-    
+
+# In the Transformer class, the dimension C (over feautures or Channels) runs 0,..,n_embd-1 
 class Head(nn.Module):
     def __init__(self, n_embd, head_size):
         super().__init__()
@@ -86,8 +95,11 @@ class Head(nn.Module):
         
         
     # Head normally receives the embeddings, not the raw integers
+    # x is a tensor of shape (B, T, C)
     def forward(self, x):
         B, T, C = x.shape
+        # each of the following 3 are linear transformations x(B,T,C), 
+        # where the C --> head_size is provided by the nn.Linear layer
         q = self.query(x) # (B, T, head_size)
         k = self.key(x)   # (B, T, head_size)
         v = self.value(x) # (B, T, head_size)
@@ -98,6 +110,21 @@ class Head(nn.Module):
         wei = F.softmax(wei, dim=-1)
         out = wei @ v
         return out
+
+
+class MultiHead(nn.Module):
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(n_embd, head_size) for _ in range(num_heads)])
+        # the following layer mixes the multiple heads into one embedding
+        self.proj = nn.Linear(num_heads * head_size, n_embd)
+        
+    def forward(self, x):
+        out = [h(x) for h in self.heads] # list of n_heads entires of (B, T, head_size) dim each
+        out = torch.cat(out, dim=-1) # (B, T, n_heads * head_size)
+        out = self.proj(out) # (B, T, n_embd)
+        return out
+    
 
 # Return "hell", "ello"
 def get_batch(data, block_size):
