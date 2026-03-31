@@ -38,6 +38,7 @@ def test_bigram():
 def test_generate():
     tokenizer = Tokenizer('0123456789')
     bigram = BigramModel(tokenizer.vocab_size)
-    idx = torch.zeros((1, 1), dtype=torch.long)
+    B, T = 4, 6 
+    idx = torch.zeros((B, T), dtype=torch.long)
     generated_idx = bigram.generate(idx, max_new_tokens=5)
-    assert generated_idx.shape == (1, 6) # e.g. tensor([[0, 1, 5, 2, 0, 9]])
+    assert generated_idx.shape == (B, T + 5) # e.g. tensor([[0, 1, 5, 2, 0, 9]])
