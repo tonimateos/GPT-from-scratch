@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+torch.manual_seed(1)
+
 # Hyperparameters (note n_embd = num_heads * head_size (which will be 32 too))
 batch_size = 32
 n_embd = 128
