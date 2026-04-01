@@ -8,13 +8,13 @@ batch_size = 32
 n_embd = 128
 num_heads = 4
 block_size = 64
-max_iters = 400
+max_iters = 10000
 eval_interval = 200
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200 # when estimating the loss in an evaluation step, how many batches to use
 dropout = 0.2
-n_transformer_layers = 2
+n_transformer_layers = 4
 # Usually, we want the total size of all heads combined to equal our total embedding size (n_embd).
 # If n_embd = 32, a common choice is num_heads = 4 and head_size = 8.
 # 4 heads x 8 features = 32 total features.
@@ -248,29 +248,42 @@ def estimate_loss(model, train_data, validation_data):
     model.train()
     return out
 
+def generate_sample(model, tokenizer, max_new_tokens=500):
+    model.eval() # set to evaluation mode
+    # Start with a single "0" (newline/start) character
+    context = torch.zeros((1, 1), dtype=torch.long, device=device)
+    # Generate and decode
+    generated_chars = model.generate(context, max_new_tokens=max_new_tokens)[0].tolist()
+    print("----- GENERATED SAMPLE -----")
+    print(tokenizer.decode(generated_chars))
+    print("-----------------------------")
+    model.train() # set back to training mode
+
 
 if __name__ == "__main__":
     text = read_training_set()
-    # tokenizer = Tokenizer(text)
-    # train_data, validation_data = tokenizer.get_validation_training_tensors()
+    tokenizer = Tokenizer(text)
+    train_data, validation_data = tokenizer.get_validation_training_tensors()
 
-    # model = GPTLanguageModel(tokenizer.vocab_size).to(device)
+    model = GPTLanguageModel(tokenizer.vocab_size).to(device)
 
-    # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-    # for iter in range(max_iters):
-    #     if (iter == 0) or (iter % eval_interval == 0):
-    #         losses = estimate_loss(model, train_data, validation_data)
-    #         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+    for iter in range(max_iters):
+        if (iter == 0) or (iter % eval_interval == 0):
+            losses = estimate_loss(model, train_data, validation_data)
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+            generate_sample(model, tokenizer, max_new_tokens=500)
 
-    #     x, y = get_batch(train_data, block_size)
-    #     x, y = x.to(device), y.to(device)
+        x, y = get_batch(train_data, block_size)
+        x, y = x.to(device), y.to(device)
 
-    #     logits, loss = model(x, y)
+        logits, loss = model(x, y)
         
-    #     optimizer.zero_grad(set_to_none=True)
-    #     loss.backward()
-    #     optimizer.step()       
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()       
 
-    # idx = torch.zeros((1, 1), dtype=torch.long)
-    # print(tokenizer.decode(model.generate(idx, max_new_tokens=100)[0].tolist()))
+    print("Final:")
+    generate_sample(model, tokenizer, max_new_tokens=500)
+    
