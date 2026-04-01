@@ -22,11 +22,14 @@ def test_split():
 def test_batching():
     tokenizer = Tokenizer('0123456789')
     train_data, validation_data = tokenizer.get_validation_training_tensors()
+    
+    # We expect a batch of size 32 (our global batch_size) 
+    # and a sequence length of 3
     batch_x, batch_y = get_batch(train_data, 3)
-    assert batch_x.shape == (3,)
-    assert batch_y.shape == (3,)
-    assert batch_x[1] == batch_y[0]
-    assert batch_x[2] == batch_y[1]
+    assert batch_x.shape == (batch_size, 3)
+    assert batch_y.shape == (batch_size, 3)
+    # Check that y is shifted by one relative to x
+    assert torch.all(batch_x[:, 1:] == batch_y[:, :-1])
     
 def test_bigram():
     bigram = BigramModel(3)

@@ -8,11 +8,11 @@ batch_size = 32
 n_embd = 128
 num_heads = 4
 block_size = 64
-max_iters = 5000
-eval_interval = 300
+max_iters = 400
+eval_interval = 200
 learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 200
+eval_iters = 200 # when estimating the loss in an evaluation step, how many batches to use
 dropout = 0.2
 n_transformer_layers = 2
 # Usually, we want the total size of all heads combined to equal our total embedding size (n_embd).
@@ -222,19 +222,55 @@ class GPTLanguageModel(nn.Module):
 
 # Return "hell", "ello"
 def get_batch(data, block_size):
-    first_index = torch.randint(0, len(data)-block_size, (1,))
-    return data[first_index:first_index+block_size], data[first_index+1:first_index+block_size+1]
-    
+    ix = torch.randint(len(data)-block_size, (batch_size,))
+    x = torch.stack([data[i:i+block_size] for i in ix])
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
+    return x, y
 
 def read_training_set():
     with open("input.txt", 'r') as f:
         text = f.read()
     return text
 
+@torch.no_grad() # tells torch we don't need to track gradients here (saves memory)
+def estimate_loss(model, train_data, validation_data):
+    out = {}
+    model.eval()
+    for split in ['train', 'val']:
+        data = train_data if split == 'train' else validation_data
+        losses = torch.zeros(eval_iters)
+        for iteration in range(eval_iters):
+            x, y = get_batch(data, block_size)
+            x, y = x.to(device), y.to(device)
+            logits, loss = model(x, y)
+            losses[iteration] = loss
+        out[split] = losses.mean()
+    model.train()
+    return out
+
+
 if __name__ == "__main__":
     text = read_training_set()
-    tokenizer = Tokenizer(text)
+    # tokenizer = Tokenizer(text)
     # train_data, validation_data = tokenizer.get_validation_training_tensors()
-    model = GPTLanguageModel(tokenizer.vocab_size)
-    idx = torch.zeros((1, 1), dtype=torch.long)
-    print(tokenizer.decode(model.generate(idx, max_new_tokens=100)[0].tolist()))
+
+    # model = GPTLanguageModel(tokenizer.vocab_size).to(device)
+
+    # optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+
+    # for iter in range(max_iters):
+    #     if (iter == 0) or (iter % eval_interval == 0):
+    #         losses = estimate_loss(model, train_data, validation_data)
+    #         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
+    #     x, y = get_batch(train_data, block_size)
+    #     x, y = x.to(device), y.to(device)
+
+    #     logits, loss = model(x, y)
+        
+    #     optimizer.zero_grad(set_to_none=True)
+    #     loss.backward()
+    #     optimizer.step()       
+
+    # idx = torch.zeros((1, 1), dtype=torch.long)
+    # print(tokenizer.decode(model.generate(idx, max_new_tokens=100)[0].tolist()))
