@@ -124,4 +124,38 @@ def test_block():
     assert not torch.allclose(out[:, -1, :], out2[:, -1, :])
     
     
+def test_gpt_model():
+    vocab_size = 10
+    n_embd = 32
+    num_heads = 4
+    # block_size is used from the global scope in train.py (currently 64)
+    model = GPTLanguageModel(vocab_size)
+    model.eval()
     
+    # 1. Test Forward Pass (Shape and Loss)
+    B, T = 4, 8
+    idx = torch.randint(0, vocab_size, (B, T))
+    targets = torch.randint(0, vocab_size, (B, T))
+    
+    logits, loss = model(idx, targets)
+    
+    assert logits.shape == (B*T, vocab_size) # Flattened for cross_entropy
+    assert loss.shape == () # Loss should be a scalar
+    
+    # 2. Test Generation (Length)
+    max_new = 10
+    generated = model.generate(idx, max_new_tokens=max_new)
+    assert generated.shape == (B, T + max_new)
+    
+    # 3. Test Block Size Cropping!
+    # Let's feed it a context LARGER than block_size
+    large_context_size = block_size + 20
+    large_idx = torch.randint(0, vocab_size, (1, large_context_size))
+    
+    # If the cropping works, this won't crash
+    # If cropping fails, it will crash with an index error in the embedding table
+    try:
+        model.generate(large_idx, max_new_tokens=1)
+    except IndexError:
+        pytest.fail("GPTLanguageModel.generate failed to crop context to block_size!")
+

@@ -14,6 +14,7 @@ learning_rate = 3e-4
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
 dropout = 0.2
+n_transformer_layers = 2
 # Usually, we want the total size of all heads combined to equal our total embedding size (n_embd).
 # If n_embd = 32, a common choice is num_heads = 4 and head_size = 8.
 # 4 heads x 8 features = 32 total features.
@@ -167,6 +168,58 @@ class Block(nn.Module):
         return x
 
 
+class GPTLanguageModel(nn.Module):
+    def __init__(self, vocab_size):
+        super().__init__()
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # (B, T, n_embd)
+        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        # syntax of the unpac operator *: 
+        #   nn.Sequential(*[Block1, Block2, Block3]) = nn.Sequential(Block1, Block2, Block3)
+        self.blocks = nn.Sequential(
+            *[Block(n_embd, num_heads) for _ in range(n_transformer_layers)]
+        )
+        self.ln_f = nn.LayerNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size)
+        
+    def forward(self, idx, targets=None):
+        B, T = idx.shape # idx is (B, T)
+        tok_emb = self.token_embedding_table(idx) # (B, T, n_embd)
+        # torch.arange(3) = [0, 1, 2]
+        pos_emb = self.position_embedding_table(torch.arange(T, device=device)) # (T, n_emd)
+        # it uses broadcast to add these 2 tensors (copies pos_emb B times)
+        x = tok_emb + pos_emb # (B, T, n_embd)
+        x = self.blocks(x) # (B, T, n_embd)
+        x = self.ln_f(x) # (B, T, n_embd)
+        logits = self.lm_head(x) # (B, T, vocab_size)
+        if targets is None:
+            loss = None
+        else:
+            B, T, C = logits.shape
+            logits = logits.view(B*T, C)
+            targets = targets.view(B*T)
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss
+        
+    def generate(self, idx, max_new_tokens):
+        for _ in range(max_new_tokens):
+            # Crop the context so it's never longer than block_size
+            # This ensures we don't look up a position index out of bounds!
+            idx_cond = idx[:, -block_size:] # <--- THIS is the key line
+            
+            # get the predictions
+            logits, loss = self(idx_cond)
+            # focus only on the last time step
+            logits = logits[:, -1, :]
+            # apply softmax to get probabilities
+            probs = F.softmax(logits, dim=-1)
+            # sample the next character (it returns a select index, not a value)
+            idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            idx = torch.cat((idx, idx_next), dim=1)
+        return idx
+        
+
+
 # Return "hell", "ello"
 def get_batch(data, block_size):
     first_index = torch.randint(0, len(data)-block_size, (1,))
@@ -182,6 +235,6 @@ if __name__ == "__main__":
     text = read_training_set()
     tokenizer = Tokenizer(text)
     # train_data, validation_data = tokenizer.get_validation_training_tensors()
-    bigram = BigramModel(tokenizer.vocab_size)
+    model = GPTLanguageModel(tokenizer.vocab_size)
     idx = torch.zeros((1, 1), dtype=torch.long)
-    print(tokenizer.decode(bigram.generate(idx, max_new_tokens=100)[0].tolist()))
+    print(tokenizer.decode(model.generate(idx, max_new_tokens=100)[0].tolist()))
