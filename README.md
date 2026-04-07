@@ -72,9 +72,3 @@ You can tweak the constants at the top of `train.py` to experiment with model sc
 - [Attention is All You Need (Paper)](https://arxiv.org/abs/1706.03762)
 - [Tiny Shakespeare Dataset](https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt)
 
----
-
-## 🗺️ Roadmap
-For the original step-by-step development checklist, refer to [roadmap.md](file:///Users/toni/gits/python101/roadmap.md).
-
-Happy coding! 🚀
