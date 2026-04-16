@@ -29,7 +29,7 @@ n_transformer_layers = 4
 class Tokenizer:
     def __init__(self, text):
         self.text = text
-        chars = sorted(set(text))
+        chars = sorted(set(text)) # useful for reproduceablity, also, across training/inference
         self.int_to_char = {i: c for i, c in enumerate(chars)}
         self.char_to_int = {c: i for i, c in enumerate(chars)}
         self.vocab_size = len(chars)
@@ -173,6 +173,8 @@ class Block(nn.Module):
 class GPTLanguageModel(nn.Module):
     def __init__(self, vocab_size):
         super().__init__()
+        # The token_embedding_table is a matrix that for each char, it given the corresponding embeddings.
+        # In the forward pass, it passed B*T of this chars.
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # (B, T, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
         # syntax of the unpac operator *: 
@@ -184,6 +186,7 @@ class GPTLanguageModel(nn.Module):
         self.lm_head = nn.Linear(n_embd, vocab_size)
         
     def forward(self, idx, targets=None):
+        # on training, this receives (x, y) each of shape (B, T), and y being shift(x, 1)
         B, T = idx.shape # idx is (B, T)
         tok_emb = self.token_embedding_table(idx) # (B, T, n_embd)
         # torch.arange(3) = [0, 1, 2]
@@ -225,6 +228,7 @@ class GPTLanguageModel(nn.Module):
 # Return "hell", "ello"
 def get_batch(data, block_size):
     ix = torch.randint(len(data)-block_size, (batch_size,))
+    # stack will join all tensors (each batch) along a new dimension
     x = torch.stack([data[i:i+block_size] for i in ix])
     y = torch.stack([data[i+1:i+block_size+1] for i in ix])
     return x, y
@@ -277,9 +281,11 @@ if __name__ == "__main__":
             print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
             generate_sample(model, tokenizer, max_new_tokens=500)
 
+        # x, y are size (batch_size, block_size) = (B, T)
         x, y = get_batch(train_data, block_size)
         x, y = x.to(device), y.to(device)
 
+        # runs the forward method in the GPT class
         logits, loss = model(x, y)
         
         optimizer.zero_grad(set_to_none=True)
